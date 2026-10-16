@@ -1,0 +1,4 @@
+[build]
+  base = "olyraax-bot"
+  publish = "."
+  functions = "netlify/functions"
