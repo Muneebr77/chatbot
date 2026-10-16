@@ -4,7 +4,7 @@ const VOICE_ID = process.env.ELEVENLABS_VOICE_ID || "21m00Tcm4TlvDq8ikWAM"; // R
 
 export default async (req) => {
   if (req.method !== "POST") return new Response("Method not allowed", { status: 405 });
-  const key = process.env.ELEVENLABS_API_KEY;
+  const key = process.env.ELEVENLABS_API_KEY || process.env.elevenlabsAI;
   if (!key) return new Response("Missing ELEVENLABS_API_KEY", { status: 500 });
 
   let text = "";
