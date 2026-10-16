@@ -1,0 +1,597 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Olyraax Support</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Cinzel:wght@700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #ffffff;
+    --panel: #ffffff;
+    --soft: #f6f5f2;
+    --text: #18161c;
+    --muted: #8a8679;
+    --line: #ece9e2;
+    --gold-1: #f6e3a1;
+    --gold-2: #d6a93e;
+    --gold-3: #a77a1f;
+    --gold: #b98a26;
+    --user: linear-gradient(135deg, #e7c262, #c49231);
+    --tag-bg: #fbf3dc;
+    --tag-text: #8a6213;
+    --ok: #22b26b;
+  }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; }
+  body {
+    margin: 0;
+    font-family: Inter, system-ui, -apple-system, sans-serif;
+    color: var(--text);
+    background: var(--bg);
+    display: flex; align-items: center; justify-content: center;
+    padding: 24px 16px;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .shell {
+    width: 100%; max-width: 450px;
+    height: min(780px, calc(100vh - 48px));
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 28px;
+    box-shadow: 0 1px 2px rgba(20,16,8,.04), 0 24px 60px -24px rgba(120, 90, 30, .22);
+    display: flex; flex-direction: column; overflow: hidden;
+  }
+
+  header {
+    padding: 16px 18px;
+    display: flex; align-items: center; gap: 12px;
+    border-bottom: 1px solid var(--line);
+  }
+  .logo { width: 46px; height: 46px; flex-shrink: 0; filter: drop-shadow(0 6px 12px rgba(190,140,40,.3)); }
+  .who { flex: 1; min-width: 0; }
+  .who h1 {
+    margin: 0; font-family: Cinzel, serif; font-size: 16px; letter-spacing: .07em;
+    background: linear-gradient(180deg, #d9ab42, #9a6d17);
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+  }
+  .who p { margin: 3px 0 0; font-size: 12.5px; color: var(--muted); display: flex; align-items: center; gap: 6px; }
+  .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--ok); box-shadow: 0 0 0 3px rgba(34,178,107,.15); }
+
+  .icon-btn {
+    width: 38px; height: 38px; border-radius: 12px;
+    border: 1px solid var(--line); background: #fff; color: var(--muted);
+    display: grid; place-items: center; cursor: pointer;
+    transition: background .2s ease, color .2s ease, border-color .2s ease, transform .15s ease;
+  }
+  .icon-btn:hover { color: var(--text); background: var(--soft); }
+  .icon-btn:active { transform: scale(.94); }
+  .icon-btn.on { color: #fff; background: var(--user); border-color: transparent; }
+  .icon-btn svg { width: 18px; height: 18px; }
+
+  #log {
+    flex: 1; overflow-y: auto; padding: 18px 16px 8px;
+    display: flex; flex-direction: column; gap: 10px;
+    scroll-behavior: smooth;
+  }
+  .day { text-align: center; font-size: 11.5px; color: var(--muted); margin: 2px 0 6px; }
+
+  .msg { display: flex; flex-direction: column; max-width: 84%; animation: pop .35s cubic-bezier(.2,.8,.2,1); }
+  .msg.bot { align-self: flex-start; }
+  .msg.user { align-self: flex-end; align-items: flex-end; }
+  .bubble { padding: 11px 14px; border-radius: 18px; font-size: 14.5px; line-height: 1.55; white-space: pre-wrap; word-wrap: break-word; }
+  .bot .bubble { background: var(--soft); border-bottom-left-radius: 6px; }
+  .user .bubble { background: var(--user); color: #fff; border-bottom-right-radius: 6px; font-weight: 500; text-shadow: 0 1px 1px rgba(120,80,10,.25); }
+  .bubble.speaking { box-shadow: 0 0 0 2px var(--gold-1); }
+  .tag {
+    align-self: flex-start; margin-top: 6px; font-size: 11.5px; font-weight: 500;
+    padding: 4px 9px; border-radius: 999px; background: var(--tag-bg); color: var(--tag-text);
+  }
+  .time { font-size: 10.5px; color: var(--muted); margin-top: 4px; padding: 0 4px; }
+
+  .typing { display: inline-flex; gap: 4px; padding: 14px 16px; }
+  .typing span { width: 7px; height: 7px; border-radius: 50%; background: var(--gold-2); animation: bounce 1.2s infinite ease-in-out; }
+  .typing span:nth-child(2) { animation-delay: .15s; }
+  .typing span:nth-child(3) { animation-delay: .3s; }
+
+  .chips { display: flex; gap: 8px; overflow-x: auto; padding: 8px 16px 4px; scrollbar-width: none; scroll-behavior: smooth; }
+  .chips::-webkit-scrollbar { display: none; }
+  .chip {
+    flex-shrink: 0; border: 1px solid var(--line); background: #fff; color: var(--text);
+    font: inherit; font-size: 13px; padding: 8px 13px; border-radius: 999px; cursor: pointer;
+    transition: border-color .2s ease, color .2s ease, background .2s ease;
+  }
+  .chip:hover { border-color: var(--gold-2); color: var(--gold); background: #fffcf3; }
+
+  form {
+    margin: 10px 14px 12px; display: flex; align-items: center; gap: 6px;
+    background: var(--soft); border: 1px solid transparent; border-radius: 18px;
+    padding: 6px 6px 6px 14px; transition: border-color .2s ease, background .2s ease, box-shadow .2s ease;
+  }
+  form:focus-within { border-color: var(--gold-2); background: #fff; box-shadow: 0 0 0 4px rgba(214,169,62,.12); }
+  input { flex: 1; min-width: 0; border: 0; outline: 0; background: transparent; color: var(--text); font: inherit; font-size: 14.5px; padding: 8px 0; }
+  input::placeholder { color: var(--muted); }
+  .round {
+    width: 38px; height: 38px; border-radius: 13px; border: 0; cursor: pointer;
+    display: grid; place-items: center; flex-shrink: 0;
+    transition: opacity .2s ease, transform .15s ease, background .2s ease, color .2s ease;
+  }
+  .round:active { transform: scale(.92); }
+  .send { background: var(--user); color: #fff; }
+  .send:disabled { opacity: .35; cursor: default; }
+  .mic { background: transparent; color: var(--muted); }
+  .mic:hover { color: var(--gold); }
+  .mic.rec { color: #fff; background: #e5484d; animation: pulse 1.3s infinite; }
+  .round svg { width: 18px; height: 18px; }
+
+  .listening {
+    display: none; align-items: center; gap: 8px;
+    margin: 0 16px; font-size: 12.5px; color: #c6383d;
+  }
+  .listening.show { display: flex; }
+  .bars { display: inline-flex; gap: 3px; align-items: center; height: 14px; }
+  .bars i { width: 3px; background: #e5484d; border-radius: 2px; animation: eq .9s infinite ease-in-out; }
+  .bars i:nth-child(2) { animation-delay: .15s; } .bars i:nth-child(3) { animation-delay: .3s; } .bars i:nth-child(4) { animation-delay: .45s; }
+
+  .foot { text-align: center; font-size: 11px; color: var(--muted); padding: 0 0 12px; }
+  .foot b { color: var(--gold); font-weight: 600; }
+
+  @keyframes pop { from { opacity: 0; transform: translateY(8px) scale(.98); } to { opacity: 1; transform: none; } }
+  @keyframes bounce { 0%, 80%, 100% { transform: translateY(0); opacity: .4; } 40% { transform: translateY(-4px); opacity: 1; } }
+  @keyframes pulse { 50% { box-shadow: 0 0 0 6px rgba(229,72,77,.18); } }
+  @keyframes eq { 0%, 100% { height: 4px; } 50% { height: 14px; } }
+
+  @media (max-width: 480px) {
+    body { padding: 0; }
+    .shell { height: 100vh; height: 100dvh; max-width: none; border-radius: 0; border: 0; box-shadow: none; }
+  }
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute">
+  <defs>
+    <linearGradient id="gold" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#fbeeb0"/>
+      <stop offset=".35" stop-color="#e3b84f"/>
+      <stop offset=".65" stop-color="#b8862a"/>
+      <stop offset="1" stop-color="#f3d77c"/>
+    </linearGradient>
+    <symbol id="mark" viewBox="0 0 64 64">
+      <rect x="2" y="2" width="60" height="60" rx="18" fill="#17130b" stroke="url(#gold)" stroke-width="2"/>
+      <circle cx="31" cy="33" r="14" fill="none" stroke="url(#gold)" stroke-width="5.5"/>
+      <path d="M46 10 L47.8 15.2 L53 17 L47.8 18.8 L46 24 L44.2 18.8 L39 17 L44.2 15.2 Z" fill="url(#gold)"/>
+    </symbol>
+  </defs>
+</svg>
+
+<div class="shell">
+  <header>
+    <svg class="logo"><use href="#mark"/></svg>
+    <div class="who">
+      <h1>OLYRAAX SUPPORT</h1>
+      <p><span class="dot"></span>Online · replies instantly</p>
+    </div>
+    <button class="icon-btn" id="voiceBtn" title="Read replies out loud" aria-label="Toggle spoken replies">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5 6 9H2v6h4l5 4V5z"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/><path d="M19 5a10 10 0 0 1 0 14"/></svg>
+    </button>
+  </header>
+
+  <div id="log" aria-live="polite"><div class="day">Today</div></div>
+  <div class="chips" id="chips"></div>
+  <div class="listening" id="listening"><span class="bars"><i></i><i></i><i></i><i></i></span>Listening… tap the mic again when you're done</div>
+
+  <form id="form" autocomplete="off">
+    <input id="input" placeholder="Type a message or tap the mic" aria-label="Your message">
+    <button class="round mic" id="mic" type="button" aria-label="Talk">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v4"/></svg>
+    </button>
+    <button class="round send" id="send" type="submit" aria-label="Send" disabled>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m13 6 6 6-6 6"/></svg>
+    </button>
+  </form>
+  <div class="foot">Powered by <b>Olyraax</b> · anything tricky goes to a real person</div>
+</div>
+
+<script>
+/* ---------- settings ---------- */
+const HUMAN_EMAIL = "support@olyraax.com";
+const WELCOME = "Hi, I'm Landon's assistant 👋 How can I help you today?";
+
+/* ---------- what the bot knows ---------- */
+const TOPICS = [
+  { id: "greet", keys: ["hi", "hello", "hey", "yo", "hiya", "good morning", "good afternoon", "good evening", "salam", "assalam"],
+    replies: ["Hey! I'm Landon's assistant. What can I help you with today?", "Hi there! What's going on? I'm here to help."] },
+
+  { id: "howareyou", keys: ["how are you", "how's it going", "hows it going", "how r u", "what's up", "whats up"],
+    replies: ["Doing great, thanks for asking! More importantly, how can I help you?"] },
+
+  { id: "whoareyou", keys: ["who are you", "what are you", "are you a bot", "are you human", "are you real", "your name", "are you ai"],
+    replies: ["I'm Landon's assistant, an AI that takes care of support. I answer the common questions instantly, and if something needs a real person I pass it straight to the team so nothing gets lost."] },
+
+  { id: "help", keys: ["what can you do", "help me", "help", "options", "menu", "what do you do"],
+    replies: ["I can help with logging in, passwords, billing and plans, refunds, study plans, reminders, syncing between devices, bugs, feature ideas and getting you to a human. Just ask the way you'd ask a friend."] },
+
+  { id: "signup", keys: ["sign up", "signup", "create account", "register", "make an account", "new account", "join"],
+    replies: ["Welcome aboard! Tap \"Sign up\", add your email and a password, then confirm the email we send you. Takes about a minute."] },
+
+  { id: "verify", keys: ["verify", "verification", "confirm email", "confirmation email", "didn't get email", "didnt get email", "no email", "activation"],
+    replies: ["Give your spam or promotions folder a quick check first, it likes to hide there. Still nothing after a few minutes? Tap \"Resend email\" on the login screen, or tell me your email and I'll get the team to check it."] },
+
+  { id: "password", keys: ["password", "reset", "forgot", "forgotten"],
+    replies: ["No worries, happens to everyone. On the login screen tap \"Forgot password\", enter your email and you'll get a reset link. It works for 30 minutes, and check spam if it doesn't show up."] },
+
+  { id: "login", keys: ["login", "log in", "sign in", "signin", "can't get in", "cant get in", "locked out", "can't access", "cant access"],
+    replies: ["Let's get you back in. Double check your email spelling and that caps lock is off. Then try \"Forgot password\". If that still doesn't work, just send me the email on your account and I'll have someone look at it."],
+    next: "askedEmail" },
+
+  { id: "plan", keys: ["upgrade", "plan", "pricing", "price", "premium", "pro", "downgrade", "switch plan", "how much", "cost", "costs"],
+    replies: ["You can change your plan anytime in Settings, then Billing, then Change plan. Upgrades kick in right away and you only pay the difference."] },
+
+  { id: "trial", keys: ["free trial", "trial", "free version", "is it free", "free plan"],
+    replies: ["Yep, you can start free and try everything out before paying. No card needed to get started."] },
+
+  { id: "student", keys: ["student discount", "discount", "coupon", "promo", "promo code", "cheaper"],
+    replies: ["We love students! Reach out from your school email and the team will sort you out with a discount."], flag: "Forwarded to a human" },
+
+  { id: "payment", keys: ["payment", "card", "charged", "charge", "declined", "failed", "billing", "paid", "pay"],
+    replies: ["Sorry about that. Usually it's an expired card or the bank being careful, so trying another card or calling your bank fixes it. If you were charged but your plan didn't switch on, send the receipt and we'll fix it within a day."] },
+
+  { id: "refund", keys: ["refund", "money back", "charged twice", "double charged", "wrong charge"],
+    replies: ["Totally understand. I've flagged this for the billing team, they'll look at it and email you within 24 hours. If you have the receipt handy, reply with it and it'll speed things up."], flag: "Sent to billing" },
+
+  { id: "invoice", keys: ["invoice", "receipt", "billing history"],
+    replies: ["You'll find every receipt in Settings, then Billing, then Billing history. You can download them as PDF from there."] },
+
+  { id: "cancel", keys: ["cancel", "unsubscribe", "stop subscription", "end subscription"],
+    replies: ["Sorry to see you go, but no problem. Settings, then Billing, then Cancel subscription. You keep access until the end of what you already paid for and there's no fee."] },
+
+  { id: "deleteaccount", keys: ["delete account", "delete my account", "remove account", "close account", "delete my data"],
+    replies: ["You can do it from Settings, then Account, then Delete account. Heads up, this wipes your plans and notes for good, so export anything you want to keep first."] },
+
+  { id: "studyplan", keys: ["study plan", "make a plan", "create plan", "new plan", "exam", "timetable", "study", "planner", "schedule"],
+    replies: ["Hit \"New plan\", pick your subject and exam date, and say how many hours a day you've got. You'll get a day by day schedule, and you can move or edit any day whenever you like."] },
+
+  { id: "reminders", keys: ["reminder", "reminders", "notification", "notifications", "alerts", "not getting notified"],
+    replies: ["Reminders live in Settings, then Notifications. If they're on but you're not getting them, check your phone settings to make sure notifications are allowed for the app."] },
+
+  { id: "sync", keys: ["sync", "syncing", "other device", "phone and laptop", "different device", "data missing", "lost my data", "not saving"],
+    replies: ["Your stuff saves to your account, so logging in with the same email on any device brings it all back. If something's missing, pull down to refresh or log out and back in. Still gone? Let me know and I'll get the team on it."] },
+
+  { id: "offline", keys: ["offline", "no internet", "without internet", "wifi"],
+    replies: ["You can view your plans offline, and anything you change will sync once you're back online."] },
+
+  { id: "mobile", keys: ["android", "iphone", "ios", "mobile app", "phone app", "app store", "play store", "download"],
+    replies: ["The mobile apps are on the way. For now everything works in your phone's browser, and you can add it to your home screen so it feels like an app."] },
+
+  { id: "calendar", keys: ["google calendar", "calendar", "outlook", "integrate", "integration", "notion"],
+    replies: ["Calendar sync is something the team is working on. I'll log that you want it so you're first to hear when it's live."], flag: "Feature request logged" },
+
+  { id: "share", keys: ["share", "friend", "group", "study group", "collaborate", "invite"],
+    replies: ["You can share any plan with a link from the share button at the top of the plan. Group study features are coming soon."] },
+
+  { id: "export", keys: ["export", "pdf", "print", "backup"],
+    replies: ["Open the plan, tap the three dots and choose Export. You can save it as a PDF or print it."] },
+
+  { id: "privacy", keys: ["privacy", "data safe", "secure", "security", "sell my data", "gdpr"],
+    replies: ["Your data's safe with us. It's encrypted, it's never sold, and you can export or delete it anytime from Settings."] },
+
+  { id: "darkmode", keys: ["dark mode", "theme", "light mode"],
+    replies: ["You can switch between light and dark in Settings, then Appearance."] },
+
+  { id: "language", keys: ["language", "urdu", "arabic", "spanish", "french", "translate"],
+    replies: ["Right now it's English only, but more languages are on the list. I'll note that you asked."], flag: "Feature request logged" },
+
+  { id: "launch", keys: ["launch", "when live", "release", "coming soon", "beta", "early access", "waitlist"],
+    replies: ["We're launching soon! Drop your email and the team will send you early access the moment it's ready."], next: "askedEmail" },
+
+  { id: "bug", keys: ["bug", "broken", "crash", "crashes", "crashing", "freezing", "frozen", "won't load", "wont load", "not loading", "lagging", "slow", "not working", "doesn't work", "doesnt work", "error", "glitch", "issue", "problem"],
+    replies: ["Ugh, sorry about that. Can you tell me what you were doing and what happened? A screenshot helps a lot too. I've tagged it as a bug so the team sees it today."],
+    flag: "Tagged as bug report", next: "bugDetails" },
+
+  { id: "feature", keys: ["feature", "suggestion", "idea", "would be cool", "you should add", "can you add", "request"],
+    replies: ["Love that, thanks! I've passed it to the product team. Ideas from users are honestly how most features get built."], flag: "Feature request logged" },
+
+  { id: "feedback", keys: ["feedback", "love the app", "great app", "awesome", "amazing", "hate", "bad app", "terrible"],
+    replies: ["Thanks for telling us, it really helps. I've shared it with the team."] },
+
+  { id: "hours", keys: ["hours", "open", "available", "response time", "how long", "when will you reply"],
+    replies: ["I'm here 24/7. If I hand something to a person, they usually reply within a few hours on weekdays."] },
+
+  { id: "human", keys: ["human", "real person", "agent", "talk to someone", "speak to someone", "representative", "manager", "call me"],
+    replies: ["Sure, I'm passing you to someone on the team now. They'll reply by email soon, usually within a few hours."], flag: "Forwarded to a human" },
+
+  { id: "thanks", keys: ["thanks", "thank you", "thx", "ty", "appreciate", "cheers", "great thanks", "perfect"],
+    replies: ["Anytime! Anything else I can help with?", "Glad I could help! Shout if anything else comes up."] },
+
+  { id: "yes", keys: ["yes", "yeah", "yep", "sure", "ok", "okay"],
+    replies: ["Cool, what do you need help with?"] },
+
+  { id: "no", keys: ["no", "nope", "nah", "that's all", "thats all", "nothing"],
+    replies: ["All good. Have a great day and happy studying!"] },
+
+  { id: "bye", keys: ["bye", "goodbye", "see you", "later", "cya"],
+    replies: ["Take care! I'm here whenever you need me."] }
+,
+  { id: "email-change", keys: ["change email", "update email", "new email", "change my email", "wrong email"],
+    replies: ["You can update it in Settings, then Account, then Email. We'll send a quick confirmation to the new address to make sure it's really you."] },
+
+  { id: "username", keys: ["username", "change name", "display name", "profile name", "change my name"],
+    replies: ["Head to Settings, then Profile. You can change your name and photo there anytime."] },
+
+  { id: "profile-pic", keys: ["profile picture", "profile pic", "avatar", "photo", "picture"],
+    replies: ["Go to Settings, then Profile and tap your picture to upload a new one."] },
+
+  { id: "2fa", keys: ["two factor", "2fa", "two step", "authenticator", "security code"],
+    replies: ["You can turn on two step login in Settings, then Security. It adds a code on top of your password so your account stays extra safe."] },
+
+  { id: "hacked", keys: ["hacked", "someone logged in", "suspicious", "not me", "stolen account", "compromised"],
+    replies: ["That's not fun, let's lock it down. Reset your password right away using \"Forgot password\" and turn on two step login in Settings. I've also flagged this to the team so they can check your account."], flag: "Urgent, sent to the team" },
+
+  { id: "multiple-devices", keys: ["how many devices", "multiple devices", "two devices", "laptop and phone", "same account"],
+    replies: ["You can use the same account on as many devices as you want. Just log in with the same email and everything follows you."] },
+
+  { id: "subjects", keys: ["subject", "subjects", "add subject", "courses", "course", "class", "classes"],
+    replies: ["Open any plan and tap \"Add subject\". You can add as many as you need and give each one its own exam date and color."] },
+
+  { id: "edit-plan", keys: ["edit plan", "change plan date", "move a day", "reschedule", "missed a day", "missed", "missed days", "few days", "catch up", "fell behind", "behind schedule"],
+    replies: ["No stress, life happens. Open your plan and tap \"Reschedule\". It spreads what you missed across the days you have left so you're back on track."] },
+
+  { id: "delete-plan", keys: ["delete plan", "remove plan", "delete a plan"],
+    replies: ["Open the plan, tap the three dots at the top, then Delete. If you just want it out of the way, Archive keeps it saved but hidden."] },
+
+  { id: "notes", keys: ["notes", "note", "write notes", "take notes"],
+    replies: ["Every study day has a notes section. Tap the day and start typing, it saves automatically."] },
+
+  { id: "flashcards", keys: ["flashcard", "flashcards", "quiz", "quizzes", "revision", "revise", "practice"],
+    replies: ["You can make flashcards for any subject from the Practice tab. Tap \"New deck\", add your questions and answers, and it'll quiz you."] },
+
+  { id: "timer", keys: ["timer", "pomodoro", "focus mode", "focus timer", "study timer"],
+    replies: ["There's a focus timer built in. Tap the clock icon on any study day, pick your session length and it'll remind you to take breaks too."] },
+
+  { id: "progress", keys: ["progress", "stats", "statistics", "streak", "how am i doing", "track"],
+    replies: ["Check the Progress tab. It shows your streak, hours studied and how much of each plan you've finished."] },
+
+  { id: "streak", keys: ["lost my streak", "streak reset", "streak gone"],
+    replies: ["Oh no, sorry about that! If you think it reset by mistake, let me know the date and I'll get the team to take a look."], flag: "Forwarded to a human" },
+
+  { id: "teacher", keys: ["teacher", "tutor", "school", "university", "for my class", "for students", "classroom"],
+    replies: ["Love that! For schools and teachers the team can set up group accounts. I've passed your details along and someone will reach out."], flag: "Forwarded to a human" },
+
+  { id: "parents", keys: ["parent", "my child", "my kid", "my son", "my daughter"],
+    replies: ["Thanks for reaching out! Parents can set up a plan with their child, and the team is happy to walk you through it. I've passed this on."], flag: "Forwarded to a human" },
+
+  { id: "age", keys: ["age limit", "how old", "minimum age", "too young"],
+    replies: ["Anyone can study with us, but if you're under 13 a parent needs to help set up the account."] },
+
+  { id: "browser", keys: ["browser", "chrome", "safari", "firefox", "which browser", "laptop", "windows", "mac"],
+    replies: ["It works in any modern browser, Chrome, Safari, Edge or Firefox, on laptop or phone. Keep your browser updated and you're good."] },
+
+  { id: "slow", keys: ["slow", "loading forever", "takes long", "lag", "laggy"],
+    replies: ["Sorry it's dragging. Try a quick refresh, and if you're on WiFi make sure the connection is solid. Still slow? Tell me what page it happens on and I'll pass it to the team."], next: "bugDetails" },
+
+  { id: "audio", keys: ["sound", "audio", "voice not working", "can't hear", "cant hear", "mute"],
+    replies: ["Check your device isn't on silent and the volume is up. On iPhone the side switch can mute websites too."] },
+
+  { id: "cookies", keys: ["cookies", "tracking", "ads", "advertising"],
+    replies: ["We only use the cookies we need to keep you logged in. No ads and no selling your info, ever."] },
+
+  { id: "terms", keys: ["terms", "terms of service", "privacy policy", "policy", "legal"],
+    replies: ["You'll find the Terms and Privacy Policy linked at the bottom of every page and in Settings, then About."] },
+
+  { id: "affiliate", keys: ["affiliate", "referral", "refer a friend", "invite friends", "earn"],
+    replies: ["You can invite friends from Settings, then Refer a friend. When they join you both get a little bonus."] },
+
+  { id: "jobs", keys: ["job", "jobs", "hiring", "work for you", "careers", "internship"],
+    replies: ["Thanks for the interest! Send your details over and I'll pass them to the team."], flag: "Forwarded to a human" },
+
+  { id: "partner", keys: ["partner", "partnership", "collab", "business inquiry", "sponsor", "press", "media"],
+    replies: ["Sounds interesting! I've passed this to the team and they'll reply by email soon."], flag: "Forwarded to a human" },
+
+  { id: "contact", keys: ["contact", "email you", "phone number", "call you", "reach you", "support email"],
+    replies: [`You can always reach the team at ${HUMAN_EMAIL}, or just keep chatting with me here and I'll pass things along.`] },
+
+  { id: "angry", keys: ["angry", "frustrated", "annoyed", "upset", "worst", "useless", "ridiculous"],
+    replies: ["I'm really sorry, that sounds frustrating and I get it. Tell me what happened and I'll make sure a real person on the team looks at it today."], flag: "Priority, sent to the team", next: "bugDetails" },
+
+  { id: "joke", keys: ["joke", "funny", "make me laugh", "bored"],
+    replies: ["Why did the student eat their homework? The teacher said it was a piece of cake 😄 Now, anything I can help you study?"] },
+
+  { id: "motivation", keys: ["motivation", "motivate", "can't focus", "cant focus", "procrastinating", "stressed", "so stressed", "stressed about", "exam stress", "nervous", "anxious", "overwhelmed"],
+    replies: ["You've got this. Try one small 25 minute session with the focus timer, just one. Starting is the hardest part and you'll feel way better after. Want help setting up a plan?"] },
+
+  { id: "tips", keys: ["study tips", "how to study", "best way to study", "tips", "advice"],
+    replies: ["A few that really work: study in short focused blocks, test yourself instead of just rereading, and review a little every day instead of cramming. The app's plans and flashcards are built around exactly that."] },
+
+  { id: "landon", keys: ["landon", "owner", "founder", "who made this", "who built", "ceo"],
+    replies: ["Landon is the founder. I'm his assistant and handle support so he can focus on making the app better. Want me to pass a message to him?"] }
+];
+
+const FALLBACK = {
+  text: `Hmm, I'm not 100% sure on that one and I'd rather not guess. I've passed it to someone on the team and they'll get back to you from ${HUMAN_EMAIL} soon.`,
+  flag: "Forwarded to a human"
+};
+
+const SUGGESTIONS = [
+  "What can you do?",
+  "I can't log in",
+  "My payment failed",
+  "How do I make a study plan?",
+  "I missed a few days",
+  "The app keeps crashing",
+  "Give me study tips",
+  "Talk to a human"
+];
+
+/* ---------- matching ---------- */
+let state = null;
+const norm = s => " " + s.toLowerCase().replace(/[’]/g, "'").replace(/[^a-z0-9'@. ]+/g, " ").replace(/\s+/g, " ").trim() + " ";
+
+function findTopic(text) {
+  const t = norm(text);
+  let best = null, bestScore = 0;
+  for (const topic of TOPICS) {
+    let score = 0;
+    for (const k of topic.keys) if (t.includes(" " + k + " ")) score += k.split(" ").length * 2 + 1;
+    if (score > bestScore) { best = topic; bestScore = score; }
+  }
+  return best;
+}
+const pick = a => a[Math.floor(Math.random() * a.length)];
+
+function getAnswer(text) {
+  const email = text.match(/[\w.+-]+@[\w-]+\.[\w.]+/);
+  if (email) {
+    state = null;
+    return { text: `Got it, thanks! I've passed ${email[0]} to the team and they'll reach out shortly.`, flag: "Forwarded to a human" };
+  }
+  const topic = findTopic(text);
+  if (state === "bugDetails" && !(topic && ["thanks", "bye", "no", "human", "greet"].includes(topic.id))) {
+    state = null;
+    return { text: "Thanks, that's really helpful. The team has everything they need and will look into it today. I'll make sure you hear back once it's sorted.", flag: "Bug report sent" };
+  }
+  if (!topic) { state = null; return FALLBACK; }
+  state = topic.next || null;
+  return { text: pick(topic.replies), flag: topic.flag };
+}
+
+/* ---------- ui ---------- */
+const $ = id => document.getElementById(id);
+const log = $("log"), form = $("form"), input = $("input"), sendBtn = $("send"), micBtn = $("mic"), voiceBtn = $("voiceBtn");
+
+function now() { return new Date().toLocaleTimeString([], { hour: "numeric", minute: "2-digit" }); }
+
+function addMessage(who, text, flag) {
+  const w = document.createElement("div");
+  w.className = "msg " + who;
+  const b = document.createElement("div");
+  b.className = "bubble"; b.textContent = text; w.appendChild(b);
+  if (flag) { const t = document.createElement("span"); t.className = "tag"; t.textContent = "● " + flag; w.appendChild(t); }
+  const tm = document.createElement("div"); tm.className = "time"; tm.textContent = now(); w.appendChild(tm);
+  log.appendChild(w); log.scrollTop = log.scrollHeight;
+  return b;
+}
+function showTyping() {
+  const w = document.createElement("div");
+  w.className = "msg bot"; w.id = "typing";
+  w.innerHTML = '<div class="bubble typing"><span></span><span></span><span></span></div>';
+  log.appendChild(w); log.scrollTop = log.scrollHeight;
+}
+const hideTyping = () => { const t = $("typing"); if (t) t.remove(); };
+
+/* ---------- voice out: ElevenLabs through the Netlify function, browser voice as backup ---------- */
+let speakReplies = false;
+let player = null;
+let elevenWorks = true;
+const canSpeak = "speechSynthesis" in window;
+let usVoice = null;
+function loadVoice() {
+  const v = canSpeak ? speechSynthesis.getVoices() : [];
+  const prefs = ["Samantha", "Google US English", "Microsoft Aria", "Microsoft Jenny", "Ava", "Allison"];
+  usVoice = prefs.map(n => v.find(x => x.name.includes(n) && x.lang.startsWith("en"))).find(Boolean) || v.find(x => x.lang === "en-US") || null;
+}
+if (canSpeak) { loadVoice(); speechSynthesis.onvoiceschanged = loadVoice; }
+
+function stopSpeaking() {
+  if (player) { player.pause(); player = null; }
+  if (canSpeak) speechSynthesis.cancel();
+  document.querySelectorAll(".bubble.speaking").forEach(b => b.classList.remove("speaking"));
+}
+
+function browserSpeak(text, bubble) {
+  if (!canSpeak) return;
+  const u = new SpeechSynthesisUtterance(text);
+  u.lang = "en-US"; if (usVoice) u.voice = usVoice; u.rate = 1.03;
+  u.onend = () => bubble && bubble.classList.remove("speaking");
+  speechSynthesis.speak(u);
+}
+
+async function speak(text, bubble) {
+  stopSpeaking();
+  const clean = text.replace(/[👋😄●]/gu, "").trim();
+  if (bubble) bubble.classList.add("speaking");
+  if (elevenWorks) {
+    try {
+      const r = await fetch("/.netlify/functions/tts", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text: clean })
+      });
+      if (!r.ok) throw new Error("tts " + r.status);
+      const blob = await r.blob();
+      player = new Audio(URL.createObjectURL(blob));
+      player.onended = () => bubble && bubble.classList.remove("speaking");
+      await player.play();
+      return;
+    } catch (e) {
+      elevenWorks = false;
+    }
+  }
+  browserSpeak(clean, bubble);
+}
+
+voiceBtn.addEventListener("click", () => {
+  speakReplies = !speakReplies;
+  voiceBtn.classList.toggle("on", speakReplies);
+  if (!speakReplies) stopSpeaking();
+});
+
+/* ---------- voice in: tap mic, talk, tap again ---------- */
+const Rec = window.SpeechRecognition || window.webkitSpeechRecognition;
+let rec = null, heard = "";
+micBtn.addEventListener("click", () => {
+  if (!Rec) {
+    addMessage("bot", "Voice input isn't supported in this browser. Try Chrome or Safari, or just type your question.");
+    return;
+  }
+  if (rec) { rec.stop(); return; }
+  stopSpeaking();
+  heard = "";
+  rec = new Rec();
+  rec.lang = "en-US"; rec.interimResults = true; rec.continuous = true;
+  rec.onresult = e => {
+    heard = Array.from(e.results).map(r => r[0].transcript).join("");
+    input.value = heard; sendBtn.disabled = !heard.trim();
+  };
+  rec.onend = () => {
+    rec = null;
+    micBtn.classList.remove("rec"); $("listening").classList.remove("show");
+    if (heard.trim()) {
+      speakReplies = true; voiceBtn.classList.add("on");
+      send(heard);
+    }
+  };
+  rec.onerror = () => {};
+  rec.start();
+  micBtn.classList.add("rec"); $("listening").classList.add("show");
+});
+
+/* ---------- chat ---------- */
+function send(text) {
+  text = text.trim(); if (!text) return;
+  addMessage("user", text);
+  input.value = ""; sendBtn.disabled = true;
+  const a = getAnswer(text);
+  showTyping();
+  setTimeout(() => {
+    hideTyping();
+    const b = addMessage("bot", a.text, a.flag);
+    if (speakReplies) speak(a.text, b);
+  }, Math.min(1400, 450 + a.text.length * 4));
+}
+form.addEventListener("submit", e => { e.preventDefault(); send(input.value); });
+input.addEventListener("input", () => { sendBtn.disabled = !input.value.trim(); });
+
+SUGGESTIONS.forEach(s => {
+  const c = document.createElement("button");
+  c.className = "chip"; c.type = "button"; c.textContent = s;
+  c.addEventListener("click", () => send(s));
+  $("chips").appendChild(c);
+});
+
+setTimeout(() => addMessage("bot", WELCOME), 300);
+</script>
+</body>
+</html>
